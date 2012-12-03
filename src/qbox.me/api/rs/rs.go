@@ -54,13 +54,16 @@ func (s *RSService) Put(
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
 	}
-	url := s.Host["io"] + "/rs-put/" + EncodeURI(entryURI) + "/mimeType/" + EncodeURI(mimeType)
-	code, err = s.Conn.CallWith(&ret, url, "application/octet-stream", body, (int64)(bodyLength))
+	url := s.HostIp["io_ip"] + "/rs-put/" + EncodeURI(entryURI) + "/mimeType/" + EncodeURI(mimeType)
+	fmt.Println("url --> ", url)
+	//code, err = s.Conn.CallWith(&ret, url, "application/octet-stream", body, (int64)(bodyLength))
+	code, err = s.Conn.CallWithBy("io", &ret, url, "application/octet-stream", body, (int64)(bodyLength))
 	return
 }
 
 func (s *RSService) Get(entryURI, base, attName string, expires int) (data GetRet, code int, err error) {
-	url := s.Host["rs"] + "/get/" + EncodeURI(entryURI)
+	url := s.HostIp["rs_ip"] + "/get/" + EncodeURI(entryURI)
+	fmt.Println("url ------ > ", url)
 	if base != "" {
 		url += "/base/" + base
 	}
@@ -70,7 +73,8 @@ func (s *RSService) Get(entryURI, base, attName string, expires int) (data GetRe
 	if expires > 0 {
 		url += "/expires/" + strconv.Itoa(expires)
 	}
-	code, err = s.Conn.Call(&data, url)
+	//code, err = s.Conn.Call(&data, url)
+	code, err = s.Conn.CallBy("rs", &data, url)
 	if code/100 == 2 {
 		data.Expiry += time.Now().Unix()
 	}
@@ -126,68 +130,4 @@ func (s *RSService) Publish(domain, table string) (code int, err error) {
 
 func (s *RSService) Unpublish(domain string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["rs"]+"/unpublish/"+EncodeURI(domain))
-}
-
-// -------------------Batcher to do -----------------------------------
-
-type BatchRet struct {
-	Data  interface{} `json:"data"`
-	Code  int         `json:"code"`
-	Error string      `json:"error"`
-}
-
-type Batcher struct {
-	s1  *RSService
-	op  []string
-	ret []BatchRet
-}
-
-func (s *RSService) NewBatcher() *Batcher {
-	return &Batcher{s1: s}
-}
-
-func (b *Batcher) operate(entryURI string, method string) {
-	b.op = append(b.op, method+EncodeURI(entryURI))
-	b.ret = append(b.ret, BatchRet{})
-}
-
-func (b *Batcher) operate2(entryURISrc, entryURIDest string, method string) {
-	b.op = append(b.op, method+EncodeURI(entryURISrc)+"/"+EncodeURI(entryURIDest))
-	b.ret = append(b.ret, BatchRet{})
-}
-
-func (b *Batcher) Stat(entryURI string) {
-	b.operate(entryURI, "/stat/")
-}
-
-func (b *Batcher) Get(entryURI string) {
-	b.operate(entryURI, "/get/")
-}
-
-func (b *Batcher) Delete(entryURI string) {
-	b.operate(entryURI, "/delete/")
-}
-
-func (b *Batcher) Move(entryURISrc, entryURIDest string) {
-	b.operate2(entryURISrc, entryURIDest, "/move/")
-}
-
-func (b *Batcher) Copy(entryURISrc, entryURIDest string) {
-	b.operate2(entryURISrc, entryURIDest, "/copy/")
-}
-
-func (b *Batcher) Reset() {
-	b.op = nil
-	b.ret = nil
-}
-
-func (b *Batcher) Len() int {
-	return len(b.op)
-}
-
-func (b *Batcher) Do() (ret []BatchRet, code int, err error) {
-	s := b.s1
-	code, err = s.Conn.CallWithForm(&b.ret, s.Host["rs"]+"/batch", map[string][]string{"op": b.op})
-	ret = b.ret
-	return
 }

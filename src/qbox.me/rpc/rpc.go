@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,8 +19,6 @@ type Client struct {
 	Conf *api.Config
 	*http.Client
 }
-
-// --------------------------- by RS -----------------------------------------
 
 func (r Client) doPost(url string, bodyType string, body io.Reader, bodyLength int64) (resp *http.Response, err error) {
 	req, err := http.NewRequest("POST", url, body)
@@ -45,6 +44,34 @@ func (r Client) doPostForm(url_ string, data map[string][]string) (resp *http.Re
 	return r.doPost(url_, "application/x-www-form-urlencoded", strings.NewReader(msg), (int64)(len(msg)))
 }
 
+// --------------------------- by RS -----------------------------------------
+
+func (r Client) doPostByRS(url string, bodyType string, body io.Reader, bodyLength int64) (resp *http.Response, err error) {
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", bodyType)
+	req.Host = r.Conf.Host["rs"]
+	fmt.Println("req.Host --> ", req.Host)
+	req.ContentLength = bodyLength
+	return r.Do(req)
+}
+
+func doGetByRS(url string) (resp *http.Response, err error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	resp, err = http.DefaultClient.Do(req)
+	return resp, err
+}
+
+func (r Client) doPostFormByRS(url_ string, data map[string][]string) (resp *http.Response, err error) {
+	msg := url.Values(data).Encode()
+	return r.doPostByRS(url_, "application/x-www-form-urlencoded", strings.NewReader(msg), (int64)(len(msg)))
+}
+
 // --------------------------- by IO -----------------------------------------
 
 func (r Client) doPostByIO(url string, bodyType string, body io.Reader, bodyLength int64) (resp *http.Response, err error) {
@@ -53,9 +80,23 @@ func (r Client) doPostByIO(url string, bodyType string, body io.Reader, bodyLeng
 		return
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Host = r.Conf.HostIp["io_ip"]
+	req.Host = r.Conf.Host["io"]
 	req.ContentLength = bodyLength
 	return r.Do(req)
+}
+
+func doGetByIO(url string) (resp *http.Response, err error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	resp, err = http.DefaultClient.Do(req)
+	return resp, err
+}
+
+func (r Client) doPostFormByIO(url_ string, data map[string][]string) (resp *http.Response, err error) {
+	msg := url.Values(data).Encode()
+	return r.doPostByIO(url_, "application/x-www-form-urlencoded", strings.NewReader(msg), (int64)(len(msg)))
 }
 
 // --------------------------- by UP -----------------------------------------
@@ -66,9 +107,22 @@ func (r Client) doPostByUP(url string, bodyType string, body io.Reader, bodyLeng
 		return
 	}
 	req.Header.Set("Content-Type", bodyType)
-	req.Host = r.Conf.HostIp["up_ip"]
+	req.Host = r.Conf.Host["up"]
 	req.ContentLength = bodyLength
 	return r.Do(req)
+}
+func doGetByUP(url string) (resp *http.Response, err error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
+	resp, err = http.DefaultClient.Do(req)
+	return resp, err
+}
+
+func (r Client) doPostFormByUP(url_ string, data map[string][]string) (resp *http.Response, err error) {
+	msg := url.Values(data).Encode()
+	return r.doPostByUP(url_, "application/x-www-form-urlencoded", strings.NewReader(msg), (int64)(len(msg)))
 }
 
 // --------------------------------------------------------------------
@@ -149,7 +203,17 @@ func Download(url string) (r io.ReadWriter, err error) {
 
 // -------------------------- helpers with specified ip ------------------------------------------
 func (r Client) CallWithFormBy(clientType string, ret interface{}, url string, param map[string][]string) (code int, err error) {
-	resp, err := r.doPostForm(url, param)
+	var (
+		resp *http.Response
+	)
+	switch clientType {
+	case "io":
+		resp, err = r.doPostFormByIO(url, param)
+	case "up":
+		resp, err = r.doPostFormByUP(url, param)
+	case "rs":
+		resp, err = r.doPostFormByRS(url, param)
+	}
 	if err != nil {
 		return errcode.InternalError, err
 	}
@@ -157,7 +221,17 @@ func (r Client) CallWithFormBy(clientType string, ret interface{}, url string, p
 }
 
 func (r Client) CallWithBy(clientType string, ret interface{}, url string, bodyType string, body io.Reader, bodyLength int64) (code int, err error) {
-	resp, err := r.doPost(url, bodyType, body, (int64)(bodyLength))
+	var (
+		resp *http.Response
+	)
+	switch clientType {
+	case "io":
+		resp, err = r.doPostByIO(url, bodyType, body, (int64)(bodyLength))
+	case "up":
+		resp, err = r.doPostByIO(url, bodyType, body, (int64)(bodyLength))
+	case "rs":
+		resp, err = r.doPostByRS(url, bodyType, body, (int64)(bodyLength))
+	}
 	if err != nil {
 		return errcode.InternalError, err
 	}
@@ -165,7 +239,17 @@ func (r Client) CallWithBy(clientType string, ret interface{}, url string, bodyT
 }
 
 func (r Client) CallBy(clientType string, ret interface{}, url string) (code int, err error) {
-	resp, err := r.doPost(url, "application/x-www-form-urlencoded", nil, 0)
+	var (
+		resp *http.Response
+	)
+	switch clientType {
+	case "io":
+		resp, err = r.doPostByIO(url, "application/x-www-form-urlencoded", nil, 0)
+	case "up":
+		resp, err = r.doPostByUP(url, "application/x-www-form-urlencoded", nil, 0)
+	case "rs":
+		resp, err = r.doPostByRS(url, "application/x-www-form-urlencoded", nil, 0)
+	}
 	if err != nil {
 		return errcode.InternalError, err
 	}
@@ -173,7 +257,17 @@ func (r Client) CallBy(clientType string, ret interface{}, url string) (code int
 }
 
 func DownloadBy(clientType string, url string) (r io.ReadWriter, err error) {
-	resp, err := doGet(url)
+	var (
+		resp *http.Response
+	)
+	switch clientType {
+	case "io":
+		resp, err = doGetByIO(url)
+	case "up":
+		resp, err = doGetByUP(url)
+	case "rs":
+		resp, err = doGetByRS(url)
+	}
 	defer resp.Body.Close()
 	if err != nil {
 		return
