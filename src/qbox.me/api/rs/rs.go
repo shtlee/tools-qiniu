@@ -2,20 +2,22 @@ package rs
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 	. "qbox.me/api"
 	"qbox.me/rpc"
 	"strconv"
 	"time"
 )
 
-type Service struct {
+type RSService struct {
 	*Config
 	Conn rpc.Client
 }
 
-func New(c *Config, t http.RoundTripper) (s *Service, err error) {
+func New(c *Config, t http.RoundTripper) (s *RSService, err error) {
 	if c == nil {
 		err = errors.New("Must have a config file")
 		return
@@ -24,7 +26,7 @@ func New(c *Config, t http.RoundTripper) (s *Service, err error) {
 		t = http.DefaultTransport
 	}
 	client := &http.Client{Transport: t}
-	s = &Service{c, rpc.Client{c, client}}
+	s = &RSService{c, rpc.Client{c, client}}
 	return
 }
 
@@ -47,18 +49,17 @@ type Entry struct {
 	MimeType string `json:"mimeType"`
 }
 
-func (s *Service) Put(
+func (s *RSService) Put(
 	entryURI, mimeType string, body io.Reader, bodyLength int64) (ret PutRet, code int, err error) {
-
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
 	}
 	url := s.Host["io"] + "/rs-put/" + EncodeURI(entryURI) + "/mimeType/" + EncodeURI(mimeType)
-	code, err = s.Conn.CallWith64(&ret, url, "application/octet-stream", body, bodyLength)
+	code, err = s.Conn.CallWith(&ret, url, "application/octet-stream", body, (int64)(bodyLength))
 	return
 }
 
-func (s *Service) Get(entryURI, base, attName string, expires int) (data GetRet, code int, err error) {
+func (s *RSService) Get(entryURI, base, attName string, expires int) (data GetRet, code int, err error) {
 	url := s.Host["rs"] + "/get/" + EncodeURI(entryURI)
 	if base != "" {
 		url += "/base/" + base
@@ -76,40 +77,58 @@ func (s *Service) Get(entryURI, base, attName string, expires int) (data GetRet,
 	return
 }
 
-func (s *Service) Stat(entryURI string) (entry Entry, code int, err error) {
+// Fetch  downloads a file specified the url and then stores it as the fname
+// on the disk.
+func (s *RSService) Fetch(url, saveAs string) error {
+	imgFi, err := os.OpenFile(saveAs, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	defer imgFi.Close()
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	reader, err := rpc.Download(url)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	io.Copy(imgFi, reader)
+	return err
+}
+
+func (s *RSService) Stat(entryURI string) (entry Entry, code int, err error) {
 	code, err = s.Conn.Call(&entry, s.Host["rs"]+"/stat/"+EncodeURI(entryURI))
 	return
 }
 
-func (s *Service) Delete(entryURI string) (code int, err error) {
+func (s *RSService) Delete(entryURI string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["rs"]+"/delete/"+EncodeURI(entryURI))
 }
 
-func (s *Service) Mkbucket(bucketname string) (code int, err error) {
+func (s *RSService) Mkbucket(bucketname string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["rs"]+"/mkbucket/"+bucketname)
 }
 
-func (s *Service) Drop(entryURI string) (code int, err error) {
+func (s *RSService) Drop(entryURI string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["rs"]+"/drop/"+entryURI)
 }
 
-func (s *Service) Move(entryURISrc, entryURIDest string) (code int, err error) {
+func (s *RSService) Move(entryURISrc, entryURIDest string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["rs"]+"/move/"+EncodeURI(entryURISrc)+"/"+EncodeURI(entryURIDest))
 }
 
-func (s *Service) Copy(entryURISrc, entryURIDest string) (code int, err error) {
+func (s *RSService) Copy(entryURISrc, entryURIDest string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["rs"]+"/copy/"+EncodeURI(entryURISrc)+"/"+EncodeURI(entryURIDest))
 }
 
-func (s *Service) Publish(domain, table string) (code int, err error) {
+func (s *RSService) Publish(domain, table string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["rs"]+"/publish/"+EncodeURI(domain)+"/from/"+table)
 }
 
-func (s *Service) Unpublish(domain string) (code int, err error) {
+func (s *RSService) Unpublish(domain string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["rs"]+"/unpublish/"+EncodeURI(domain))
 }
 
-// ----------------------------------------------------------
+// -------------------Batcher to do -----------------------------------
 
 type BatchRet struct {
 	Data  interface{} `json:"data"`
@@ -118,12 +137,12 @@ type BatchRet struct {
 }
 
 type Batcher struct {
-	s1  *Service
+	s1  *RSService
 	op  []string
 	ret []BatchRet
 }
 
-func (s *Service) NewBatcher() *Batcher {
+func (s *RSService) NewBatcher() *Batcher {
 	return &Batcher{s1: s}
 }
 

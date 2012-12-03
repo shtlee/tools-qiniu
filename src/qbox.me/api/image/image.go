@@ -8,12 +8,12 @@ import (
 	"qbox.me/rpc"
 )
 
-type Service struct {
+type Fileop struct {
 	*Config
 	Conn rpc.Client
 }
 
-func New(c *Config, t http.RoundTripper) (s *Service, err error) {
+func New(c *Config, t http.RoundTripper) (s *Fileop, err error) {
 	if c == nil {
 		err = errors.New("Must have a config file")
 		return
@@ -22,7 +22,7 @@ func New(c *Config, t http.RoundTripper) (s *Service, err error) {
 		t = http.DefaultTransport
 	}
 	client := &http.Client{Transport: t}
-	s = &Service{c, rpc.Client{c, client}}
+	s = &Fileop{c, rpc.Client{c, client}}
 	return
 }
 
@@ -33,7 +33,7 @@ type ImageInfo struct {
 	ColorModel string `json:"colorModel"`
 }
 
-func (s *Service) Info(url string) (ret ImageInfo, code int, err error) {
+func (s *Fileop) Info(url string) (ret ImageInfo, code int, err error) {
 	url1 := url + "?imageInfo"
 	code, err = s.Conn.Call(&ret, url1)
 	return
@@ -44,7 +44,7 @@ type ImageExif struct {
 	Type  int    `json:"type"`
 }
 
-func (s *Service) Exif(url string) (ret map[string]ImageExif, code int, err error) {
+func (s *Fileop) Exif(url string) (ret map[string]ImageExif, code int, err error) {
 	url1 := url + "?exif"
 	ret = make(map[string]ImageExif)
 	code, err = s.Conn.Call(&ret, url1)
@@ -61,7 +61,7 @@ func (s *Service) Exif(url string) (ret map[string]ImageExif, code int, err erro
 // Sharpen:<sharpen>
 // Watermark:<watermark> = "0" or "1"
 
-func (s *Service) View(w io.Writer, url string, params map[string]string) (code int, err error) {
+func (s *Fileop) View(w io.Writer, url string, params map[string]string) (code int, err error) {
 
 	url1 := url + "?imageView/"
 	if mode, ok := params["Mode"]; ok && mode != "" {
@@ -105,7 +105,7 @@ type ImageHash struct {
 	Hash string `json:"hash"`
 }
 
-func (s *Service) Mogr(ret interface{}, url string, params map[string]string) (code int, err error) {
+func (s *Fileop) Mogr(ret interface{}, url string, params map[string]string) (code int, err error) {
 	url1 := url + "?imageMogr"
 	if thumb, ok := params["Thumbnail"]; ok && thumb != "" {
 		url1 += "/thumbnail/" + thumb

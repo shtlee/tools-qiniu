@@ -8,12 +8,12 @@ import (
 	"strconv"
 )
 
-type Service struct {
+type Publish struct {
 	*Config
 	Conn rpc.Client
 }
 
-func New(c *Config, t http.RoundTripper) (s *Service, err error) {
+func New(c *Config, t http.RoundTripper) (s *Publish, err error) {
 	if c == nil {
 		err = errors.New("Must have a config file")
 		return
@@ -23,7 +23,7 @@ func New(c *Config, t http.RoundTripper) (s *Service, err error) {
 		return
 	}
 	client := &http.Client{Transport: t}
-	s = &Service{c, rpc.Client{c, client}}
+	s = &Publish{c, rpc.Client{c, client}}
 	return
 }
 
@@ -36,7 +36,7 @@ type BucketInfo struct {
 	Styles    map[string]string `json:"styles" bson:"styles"`
 }
 
-func (s *Service) Image(bucketName string, srcSiteUrls []string, srcHost string, expires int) (code int, err error) {
+func (s *Publish) Image(bucketName string, srcSiteUrls []string, srcHost string, expires int) (code int, err error) {
 	url := s.Host["pu"] + "/image/" + bucketName
 	for _, srcSiteUrl := range srcSiteUrls {
 		url += "/from/" + EncodeURI(srcSiteUrl)
@@ -50,27 +50,27 @@ func (s *Service) Image(bucketName string, srcSiteUrls []string, srcHost string,
 	return s.Conn.Call(nil, url)
 }
 
-func (s *Service) Unimage(bucketName string) (code int, err error) {
+func (s *Publish) Unimage(bucketName string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["pu"]+"/unimage/"+bucketName)
 }
 
-func (s *Service) Info(bucketName string) (info BucketInfo, code int, err error) {
+func (s *Publish) Info(bucketName string) (info BucketInfo, code int, err error) {
 	code, err = s.Conn.Call(&info, s.Host["pu"]+"/info/"+bucketName)
 	return
 }
 
-func (s *Service) AccessMode(bucketName string, mode int) (code int, err error) {
+func (s *Publish) AccessMode(bucketName string, mode int) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["pu"]+"/accessMode/"+bucketName+"/mode/"+strconv.Itoa(mode))
 }
 
-func (s *Service) Separator(bucketName string, sep string) (code int, err error) {
+func (s *Publish) Separator(bucketName string, sep string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["pu"]+"/separator/"+bucketName+"/sep/"+EncodeURI(sep))
 }
 
-func (s *Service) Style(bucketName string, name string, style string) (code int, err error) {
+func (s *Publish) Style(bucketName string, name string, style string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["pu"]+"/style/"+bucketName+"/name/"+EncodeURI(name)+"/style/"+EncodeURI(style))
 }
 
-func (s *Service) Unstyle(bucketName string, name string) (code int, err error) {
+func (s *Publish) Unstyle(bucketName string, name string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["pu"]+"/unstyle/"+bucketName+"/name/"+EncodeURI(name))
 }

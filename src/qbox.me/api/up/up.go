@@ -3,6 +3,7 @@ package up
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hash/crc32"
 	"io"
 	"io/ioutil"
@@ -189,10 +190,11 @@ func (t *RPtask) PutBlock(blockIdx int) (code int, err error) {
 		bd := io.TeeReader(bd1, h)
 		if prog.Ctx == "" {
 			url = t.Host["up"] + "/mkblk/" + strconv.FormatInt(blocksize, 10)
+			fmt.Println(" ctx is nil")
 		} else {
 			url = t.Host["up"] + "/bput/" + prog.Ctx + "/" + strconv.FormatInt(prog.Offset, 10)
 		}
-		code, err = t.Conn.CallWith(prog, url, "application/octet-stream", bd, int(bdlen))
+		code, err = t.Conn.CallWith(prog, url, "application/octet-stream", bd, bdlen)
 		if err == nil {
 			if prog.Crc32 == h.Sum32() {
 				restsize = blocksize - prog.Offset
@@ -244,14 +246,14 @@ func (t *RPtask) Mkfile() (code int, err error) {
 	if t.CallbackParams != "" {
 		url += "/params/" + t.CallbackParams
 	}
-	code, err = t.Conn.CallWith(nil, url, "", strings.NewReader(string(bd)), len(bd))
+	code, err = t.Conn.CallWith(nil, url, "", strings.NewReader(string(bd)), (int64)(len(bd)))
 	return
 }
 
 func (s *Service) Put(
 	entryURI, mimeType string, customer, meta, params string,
 	body io.ReaderAt, bodyLength int64,
-	progfile string, // if uoload haven't done, save the progress into this file
+	progfile string, // if upload haven't done, save the progress into this file
 	chunkNotify, blockNotify func(blockIdx int, prog *BlockputProgress)) (code int, err error) {
 
 	t1 := s.NewRPtask(entryURI, mimeType, customer, meta, params, body, bodyLength)

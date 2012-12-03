@@ -3,27 +3,34 @@ package qbox
 import (
 	"encoding/json"
 	"io/ioutil"
+	//"math/rand"
 	"os"
 	. "qbox.me/api"
+	"qbox.me/api/eu"
+	"qbox.me/api/image"
+	"qbox.me/api/pub"
+	"qbox.me/api/rs"
+	"qbox.me/api/uc"
+	"qbox.me/api/up"
 	"qbox.me/auth/digest"
 	"qbox.me/auth/uptoken"
 	"testing"
 )
 
 // global testing variables
-const (
+var (
 	testfile   = "gopher.jpg"
 	testbucket = "test_bucket"
 	testkey    = "gopher.jpg"
 )
 
 var (
-	eus  *eu.Service
+	eus  *eu.EUService
 	ups  *up.Service
-	ucs  *uc.Service
-	pubs *pub.Service
-	rss  *rs.Service
-	ims  *image.Service
+	ucs  *uc.UCService
+	pubs *pub.Publish
+	rss  *rs.RSService
+	ims  *image.Fileop
 )
 
 func doTestSetWatermark(t *testing.T) {
@@ -245,6 +252,7 @@ func doTestDelAntiLeech(t *testing.T) {
 
 func doTestUpPut(t *testing.T) {
 	entryURI := testbucket + ":" + testkey
+	testfile = "/home/wangjinlei/HDF.pdf"
 	f, err := os.Open(testfile)
 	if err != nil {
 		t.Fatal(err)
@@ -443,12 +451,12 @@ func doTestInit(t *testing.T) {
 
 	// create auth transport layer, uptoken and digest
 	auth := &uptoken.AuthPolicy{}
-	token := uptoken.MakeAuthTokenString(c.Access_key, c.Secret_key, auth)
+	token := uptoken.MakeAuthTokenString(c.AccessKey, c.SecretKey, auth)
 	// uptoken transport
 	ut := uptoken.NewTransport(token, nil)
 
 	// digest transport
-	dt := digest.NewTransport(c.Access_key, c.Secret_key, nil)
+	dt := digest.NewTransport(c.AccessKey, c.SecretKey, nil)
 
 	if eus, err = eu.New(&c, dt); err != nil {
 		t.Fatal(err)

@@ -8,22 +8,22 @@ import (
 	"strconv"
 )
 
-type Service struct {
+type UCService struct {
 	*Config
 	Conn rpc.Client
 }
 
-func New(c *Config, t http.RoundTripper) (s *Service, err error) {
+func New(c *Config, t http.RoundTripper) (s *UCService, err error) {
 	if c == nil {
 		err = errors.New("Must have a config file")
 		return
 	}
 	client := &http.Client{Transport: t}
-	s = &Service{c, rpc.Client{c, client}}
+	s = &UCService{c, rpc.Client{c, client}}
 	return
 }
 
-func (s *Service) AntiLeechMode(bucket string, mode int) (code int, err error) {
+func (s *UCService) AntiLeechMode(bucket string, mode int) (code int, err error) {
 	param := map[string][]string{
 		"bucket": {bucket},
 		"mode":   {strconv.Itoa(mode)},
@@ -32,7 +32,7 @@ func (s *Service) AntiLeechMode(bucket string, mode int) (code int, err error) {
 	return s.Conn.CallWithForm(nil, url, param)
 }
 
-func (s *Service) AddAntiLeech(bucket string, mode int, pattern string) (code int, err error) {
+func (s *UCService) AddAntiLeech(bucket string, mode int, pattern string) (code int, err error) {
 	param := map[string][]string{
 		"bucket":  {bucket},
 		"mode":    {strconv.Itoa(mode)},
@@ -43,7 +43,7 @@ func (s *Service) AddAntiLeech(bucket string, mode int, pattern string) (code in
 	return s.Conn.CallWithForm(nil, url, param)
 }
 
-func (s *Service) CleanCache(bucket string) (code int, err error) {
+func (s *UCService) CleanCache(bucket string) (code int, err error) {
 	param := map[string][]string{
 		"bucket": {bucket},
 	}
@@ -51,7 +51,7 @@ func (s *Service) CleanCache(bucket string) (code int, err error) {
 	return s.Conn.CallWithForm(nil, url, param)
 }
 
-func (s *Service) DelAntiLeech(bucket string, mode int, pattern string) (code int, err error) {
+func (s *UCService) DelAntiLeech(bucket string, mode int, pattern string) (code int, err error) {
 	param := map[string][]string{
 		"bucket":  {bucket},
 		"mode":    {strconv.Itoa(mode)},

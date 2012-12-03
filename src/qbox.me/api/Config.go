@@ -9,8 +9,8 @@ import (
 type Config struct {
 	Host           map[string]string `json:"HOST"`
 	HostIp         map[string]string `json:"HOST_IP"`
-	Access_key     string            `json:"QBOX_ACCESS_KEY"`
-	Secret_key     string            `json:"QBOX_SECRET_KEY"`
+	AccessKey      string            `json:"QBOX_ACCESS_KEY"`
+	SecretKey      string            `json:"QBOX_SECRET_KEY"`
 	BlockBits      uint              `json:"BLOCK_BITS"`
 	RPutChunkSize  int64             `json:"RPUT_CHUNK_SIZE"`
 	RPutRetryTimes int               `json:"RPUT_RETRY_TIMES"`

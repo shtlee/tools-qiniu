@@ -8,12 +8,12 @@ import (
 	"strconv"
 )
 
-type Service struct {
+type EUService struct {
 	*Config
 	Conn rpc.Client
 }
 
-func New(c *Config, t http.RoundTripper) (s *Service, err error) {
+func New(c *Config, t http.RoundTripper) (s *EUService, err error) {
 	if c == nil {
 		err = errors.New("Must have a config file")
 		return
@@ -22,7 +22,7 @@ func New(c *Config, t http.RoundTripper) (s *Service, err error) {
 		t = http.DefaultTransport
 	}
 	client := &http.Client{Transport: t}
-	s = &Service{c, rpc.Client{c, client}}
+	s = &EUService{c, rpc.Client{c, client}}
 	return
 }
 
@@ -38,7 +38,7 @@ type Watermark struct {
 	Dy       int    `json:"dy"`
 }
 
-func (s *Service) GetWatermark(customer string) (ret Watermark, code int, err error) {
+func (s *EUService) GetWatermark(customer string) (ret Watermark, code int, err error) {
 
 	params := map[string][]string{
 		"customer": {customer},
@@ -47,7 +47,7 @@ func (s *Service) GetWatermark(customer string) (ret Watermark, code int, err er
 	return
 }
 
-func (s *Service) SetWatermark(customer string, args *Watermark) (code int, err error) {
+func (s *EUService) SetWatermark(customer string, args *Watermark) (code int, err error) {
 
 	params := map[string][]string{
 		"text": {args.Text},
