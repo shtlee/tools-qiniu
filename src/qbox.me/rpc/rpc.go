@@ -33,7 +33,7 @@ func (r Client) doPost(url string, bodyType string, body io.Reader, bodyLength i
 func doGet(url string) (resp *http.Response, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return
+		return nil, err
 	}
 	resp, err = http.DefaultClient.Do(req)
 	return resp, err
@@ -44,9 +44,49 @@ func (r Client) doPostForm(url_ string, data map[string][]string) (resp *http.Re
 	return r.doPost(url_, "application/x-www-form-urlencoded", strings.NewReader(msg), (int64)(len(msg)))
 }
 
+// ------------------------------ helpers ------------------------------
+
+func (r Client) CallWithForm(ret interface{}, url string, param map[string][]string) (code int, err error) {
+	resp, err := r.doPostForm(url, param)
+	if err != nil {
+		return errcode.InternalError, err
+	}
+	return callRet(ret, resp)
+}
+
+func (r Client) CallWith(ret interface{}, url string, bodyType string, body io.Reader, bodyLength int64) (code int, err error) {
+	resp, err := r.doPost(url, bodyType, body, (int64)(bodyLength))
+	if err != nil {
+		return errcode.InternalError, err
+	}
+	return callRet(ret, resp)
+}
+
+func (r Client) Call(ret interface{}, url string) (code int, err error) {
+	resp, err := r.doPost(url, "application/x-www-form-urlencoded", nil, 0)
+	if err != nil {
+		return errcode.InternalError, err
+	}
+	return callRet(ret, resp)
+}
+
+func Download(url string) (r io.ReadWriter, err error) {
+	resp, err := doGet(url)
+	defer resp.Body.Close()
+	if err != nil {
+		return
+	}
+	r = new(bytes.Buffer)
+	io.Copy(r, resp.Body)
+	return r, err
+}
+
+// --------------------------- with header host -----------------------------
+
 // --------------------------- by RS -----------------------------------------
 
 func (r Client) doPostByRS(url string, bodyType string, body io.Reader, bodyLength int64) (resp *http.Response, err error) {
+	fmt.Println(" |- doPostByRS --> ", url)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return
@@ -163,42 +203,6 @@ func callRet(ret interface{}, resp *http.Response) (code int, err error) {
 		err = errcode.Errno(code)
 	}
 	return
-}
-
-// ------------------------------ helpers ------------------------------
-func (r Client) CallWithForm(ret interface{}, url string, param map[string][]string) (code int, err error) {
-	resp, err := r.doPostForm(url, param)
-	if err != nil {
-		return errcode.InternalError, err
-	}
-	return callRet(ret, resp)
-}
-
-func (r Client) CallWith(ret interface{}, url string, bodyType string, body io.Reader, bodyLength int64) (code int, err error) {
-	resp, err := r.doPost(url, bodyType, body, (int64)(bodyLength))
-	if err != nil {
-		return errcode.InternalError, err
-	}
-	return callRet(ret, resp)
-}
-
-func (r Client) Call(ret interface{}, url string) (code int, err error) {
-	resp, err := r.doPost(url, "application/x-www-form-urlencoded", nil, 0)
-	if err != nil {
-		return errcode.InternalError, err
-	}
-	return callRet(ret, resp)
-}
-
-func Download(url string) (r io.ReadWriter, err error) {
-	resp, err := doGet(url)
-	defer resp.Body.Close()
-	if err != nil {
-		return
-	}
-	r = new(bytes.Buffer)
-	io.Copy(r, resp.Body)
-	return r, err
 }
 
 // -------------------------- helpers with specified ip ------------------------------------------

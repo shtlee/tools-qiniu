@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	. "qbox.me/api"
+	"qbox.me/auth/digest"
 	"qbox.me/rpc"
 )
 
@@ -15,11 +16,26 @@ type Fileop struct {
 
 func New(c *Config, t http.RoundTripper) (s *Fileop, err error) {
 	if c == nil {
-		err = errors.New("Must have a config file")
+		err = errors.New("No config file!")
 		return
 	}
 	if t == nil {
 		t = http.DefaultTransport
+	}
+	client := &http.Client{Transport: t}
+	s = &Fileop{c, rpc.Client{c, client}}
+	return
+}
+
+func NewService(c *Config) (s *Fileop, err error) {
+	if c == nil {
+		err = errors.New("No config file")
+		return
+	}
+	// digest transport
+	t := digest.NewTransport(c.AccessKey, c.SecretKey, nil)
+	if t == nil {
+		//	t = http.DefaultTransport
 	}
 	client := &http.Client{Transport: t}
 	s = &Fileop{c, rpc.Client{c, client}}

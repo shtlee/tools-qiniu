@@ -125,9 +125,75 @@ func (s *RSService) Copy(entryURISrc, entryURIDest string) (code int, err error)
 }
 
 func (s *RSService) Publish(domain, table string) (code int, err error) {
-	return s.Conn.Call(nil, s.Host["rs"]+"/publish/"+EncodeURI(domain)+"/from/"+table)
+	fmt.Println(" |--- rs Publish --> ", domain, table)
+	//return s.Conn.Call(nil, "http://"+s.Host["rs"]+"/publish/"+EncodeURI(domain)+"/from/"+table)
+	return s.Conn.CallBy("rs", nil, s.HostIp["rs_ip"]+"/publish/"+EncodeURI(domain)+"/from/"+table)
 }
 
 func (s *RSService) Unpublish(domain string) (code int, err error) {
 	return s.Conn.Call(nil, s.Host["rs"]+"/unpublish/"+EncodeURI(domain))
+}
+
+// -------------------Batcher to do -----------------------------------
+
+type BatchRet struct {
+	Data  interface{} `json:"data"`
+	Code  int         `json:"code"`
+	Error string      `json:"error"`
+}
+
+type Batcher struct {
+	s1  *RSService
+	op  []string
+	ret []BatchRet
+}
+
+func (s *RSService) NewBatcher() *Batcher {
+	return &Batcher{s1: s}
+}
+
+func (b *Batcher) operate(entryURI string, method string) {
+	b.op = append(b.op, method+EncodeURI(entryURI))
+	b.ret = append(b.ret, BatchRet{})
+}
+
+func (b *Batcher) operate2(entryURISrc, entryURIDest string, method string) {
+	b.op = append(b.op, method+EncodeURI(entryURISrc)+"/"+EncodeURI(entryURIDest))
+	b.ret = append(b.ret, BatchRet{})
+}
+
+func (b *Batcher) Stat(entryURI string) {
+	b.operate(entryURI, "/stat/")
+}
+
+func (b *Batcher) Get(entryURI string) {
+	b.operate(entryURI, "/get/")
+}
+
+func (b *Batcher) Delete(entryURI string) {
+	b.operate(entryURI, "/delete/")
+}
+
+func (b *Batcher) Move(entryURISrc, entryURIDest string) {
+	b.operate2(entryURISrc, entryURIDest, "/move/")
+}
+
+func (b *Batcher) Copy(entryURISrc, entryURIDest string) {
+	b.operate2(entryURISrc, entryURIDest, "/copy/")
+}
+
+func (b *Batcher) Reset() {
+	b.op = nil
+	b.ret = nil
+}
+
+func (b *Batcher) Len() int {
+	return len(b.op)
+}
+
+func (b *Batcher) Do() (ret []BatchRet, code int, err error) {
+	s := b.s1
+	code, err = s.Conn.CallWithForm(&b.ret, s.Host["rs"]+"/batch", map[string][]string{"op": b.op})
+	ret = b.ret
+	return
 }
