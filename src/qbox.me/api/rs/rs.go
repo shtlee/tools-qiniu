@@ -55,15 +55,12 @@ func (s *RSService) Put(
 		mimeType = "application/octet-stream"
 	}
 	url := s.HostIp["io_ip"] + "/rs-put/" + EncodeURI(entryURI) + "/mimeType/" + EncodeURI(mimeType)
-	fmt.Println("url --> ", url)
-	//code, err = s.Conn.CallWith(&ret, url, "application/octet-stream", body, (int64)(bodyLength))
 	code, err = s.Conn.CallWithBy("io", &ret, url, "application/octet-stream", body, (int64)(bodyLength))
 	return
 }
 
 func (s *RSService) Get(entryURI, base, attName string, expires int) (data GetRet, code int, err error) {
 	url := s.HostIp["rs_ip"] + "/get/" + EncodeURI(entryURI)
-	fmt.Println("url ------ > ", url)
 	if base != "" {
 		url += "/base/" + base
 	}

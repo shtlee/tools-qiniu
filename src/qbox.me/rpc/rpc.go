@@ -12,7 +12,7 @@ import (
 	"qbox.me/errcode"
 	"strings"
 )
-
+ 
 // --------------------------------------------------------------------
 
 type Client struct {
@@ -84,24 +84,6 @@ func Download(url string) (r io.ReadWriter, err error) {
 const (
 	NetWorkError = 102
 )
-
-func (r Client) CallWithBinaryEx(ret interface{}, url_ string, bodyType string, body io.Reader, bodyLength int) (code int, err error) {
-	resp, err := r.PostEx(url_, bodyType, body, bodyLength)
-	if err != nil {
-		return NetWorkError, err
-	}
-	return callRet(ret, resp)
-}
-
-func (r Client) PostEx(url_ string, bodyType string, body io.Reader, bodyLength int) (resp *http.Response, err error) {
-	req, err := http.NewRequest("POST", url_, body)
-	if err != nil {
-		return
-	}
-	req.Header.Set("Content-Type", bodyType)
-	req.ContentLength = int64(bodyLength)
-	return r.Do(req)
-}
 
 // --------------------------- with header host -----------------------------
 
@@ -254,7 +236,7 @@ func (r Client) CallWithBy(clientType string, ret interface{}, url string, bodyT
 	case "io":
 		resp, err = r.doPostByIO(url, bodyType, body, (int64)(bodyLength))
 	case "up":
-		resp, err = r.doPostByIO(url, bodyType, body, (int64)(bodyLength))
+		resp, err = r.doPostByUP(url, bodyType, body, (int64)(bodyLength))
 	case "rs":
 		resp, err = r.doPostByRS(url, bodyType, body, (int64)(bodyLength))
 	}

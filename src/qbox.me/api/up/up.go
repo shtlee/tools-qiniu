@@ -25,26 +25,6 @@ const (
     PUT_RETRY_TIMES = 3
 )
 
-// ----------------------------------------------------------
-type UpService struct {
-    *Config
-    Conn rpc.Client
-}
-
-
-func New(c *Config, t http.RoundTripper) (s *UpService, err error) {
-    if c == nil {
-        err = errors.New("Must have a config file")
-        return
-    }
-    if t == nil {
-        t = http.DefaultTransport
-    }
-    client := &http.Client{Transport: t}
-    s = &UpService{c, rpc.Client{c, client}}
-    return
-}
-
 type PutRet struct {
     Ctx      string `json:"ctx"`
     Checksum string `json:"checksum"`
@@ -53,15 +33,42 @@ type PutRet struct {
     Host     string `json:"host"`
 }
 
-func mkBlock(c rpc.Client, blockSize int, body io.Reader, bodyLength int) (ret PutRet, code int, err error) {
-    code, err = c.CallWithBinaryEx(
-        &ret, UP_HOST+"/mkblk/"+strconv.Itoa(blockSize), "application/octet-stream", body, bodyLength)
+
+type Service struct {
+    Tasks chan func()
+    *Config
+    Conn rpc.Client
+}
+
+func NewService(c *Config, t http.RoundTripper, taskQsize, threadSize int) (s Service, err error) {
+    tasks := make(chan func(), taskQsize)
+    for i := 0; i < threadSize; i++ {
+        go worker(tasks)
+    }
+    if c == nil {
+        err = errors.New("Must have a config file!")
+        return 
+    }
+    if t == nil {
+        t = http.DefaultTransport
+    }
+    client := &http.Client{Transport : t}
+    s = Service{tasks, c, rpc.Client{c, client}}
+    return 
+}
+
+
+func (r Service) mkBlock(blockSize int, body io.Reader, bodyLength int) (ret PutRet, code int, err error) {
+    code, err = r.Conn.CallWithBy(
+        "up", &ret, r.Config.HostIp["up_ip"] +"/mkblk/"+strconv.Itoa(blockSize), "application/octet-stream", body, (int64)(bodyLength))
+
+fmt.Println("up_host ip--> ", r.Config.HostIp["up_ip"])
     return
 }
 
-func blockPut(c rpc.Client, ctx string, offset int, body io.Reader, bodyLength int) (ret PutRet, code int, err error) {
-    code, err = c.CallWithBinaryEx(
-        &ret, UP_HOST+"/bput/"+ctx+"/"+strconv.Itoa(offset), "application/octet-stream", body, bodyLength)
+func (r Service) blockPut(ctx string, offset int, body io.Reader, bodyLength int) (ret PutRet, code int, err error) {
+    code, err = r.Conn.CallWithBy(
+        "up", &ret, r.Config.HostIp["up_ip"] +"/bput/"+ctx+"/"+strconv.Itoa(offset), "application/octet-stream", body, (int64)(bodyLength))
     return
 }
 
@@ -87,8 +94,8 @@ func getBodyLength(chunkSize, blkSize int) int {
     return bodyLength
 }
 
-func ResumableBlockput(
-    c rpc.Client, f io.ReaderAt, blockIdx int, blkSize, chunkSize, retryTimes int,
+func (r Service) resumableBlockput(
+    f io.ReaderAt, blockIdx int, blkSize, chunkSize, retryTimes int,
     prog *BlockProgress, notify func(blockIdx int, prog *BlockProgress)) (ret PutRet, code int, err error) {
 
     offbase := int64(blockIdx) << BLOCK_BITS
@@ -102,7 +109,7 @@ func ResumableBlockput(
         body1 := io.NewSectionReader(f, offbase, int64(bodyLength))
         body := io.TeeReader(body1, h)
 
-        ret, code, err = mkBlock(c, blkSize, body, bodyLength)
+        ret, code, err = r.mkBlock(blkSize, body, bodyLength)
         if err != nil {
             fmt.Println(" |- ResumaleBlockPut : mkblock failed : ", err)
             return
@@ -136,7 +143,7 @@ func ResumableBlockput(
         body1 := io.NewSectionReader(f, offbase+int64(prog.Offset), int64(bodyLength))
         h.Reset()
         body := io.TeeReader(body1, h)
-        ret, code, err = blockPut(c, prog.Ctx, prog.Offset, body, bodyLength)
+        ret, code, err = r.blockPut(prog.Ctx, prog.Offset, body, bodyLength)
 
         // put successfully, but need more check should be done.
         if err == nil { 
@@ -170,45 +177,12 @@ func ResumableBlockput(
 } 
 
 
-func Mkfile(
-    c rpc.Client, ret interface{}, cmd, entry string,
-    fsize int64, params, callbackParams string, checksums []string) (code int, err error) {
-    if callbackParams != "" {
-        params += "/params/" + rpc.EncodeURI(callbackParams)
-    }
 
-    n := len(checksums)
-    body := make([]byte, 20*n)
-    for i, checksum := range checksums {
-        ret, err2 := base64.URLEncoding.DecodeString(checksum)
-        if err2 != nil {
-            code, err = 400, errors.New("mkfile error")
-            return
-        }
-        copy(body[i*20:], ret)
-    }
-    code, err = c.CallWithBinaryEx(
-        ret, UP_HOST+cmd+rpc.EncodeURI(entry)+"/fsize/"+strconv.FormatInt(fsize, 10)+params,
-        "application/octet-stream", bytes.NewReader(body), len(body))
-    return
-}
 
 // a helper
 func BlockCount(fsize int64) int {
     blockMask := int64((1 << BLOCK_BITS) - 1)
     return int((fsize + blockMask) >> BLOCK_BITS)
-}
-
-type Service struct {
-    Tasks chan func()
-}
-
-func NewService(taskQsize, threadSize int) Service {
-    tasks := make(chan func(), taskQsize)
-    for i := 0; i < threadSize; i++ {
-        go worker(tasks)
-    }
-    return Service{tasks}
 }
 
 func worker(tasks chan func()) {
@@ -219,7 +193,7 @@ func worker(tasks chan func()) {
 }
 
 func (r Service) Put(
-    c rpc.Client, f io.ReaderAt, fsize int64, checksums []string, progs []BlockProgress,
+    f io.ReaderAt, fsize int64, checksums []string, progs []BlockProgress,
     blockNotify func(blockIdx int, checksum string),
     chunkNotify func(blockIdx int, prog *BlockProgress)) (code int, err error) {
 
@@ -244,8 +218,8 @@ func (r Service) Put(
             }
             task := func() {
                 defer wg.Done()
-                ret, code, err2 := ResumableBlockput(
-                    c, f, blockIdx, blockSize1, PUT_CHUNK_SIZE, PUT_RETRY_TIMES, &progs[blockIdx], chunkNotify)
+                ret, code, err2 := r.resumableBlockput(
+                    f, blockIdx, blockSize1, PUT_CHUNK_SIZE, PUT_RETRY_TIMES, &progs[blockIdx], chunkNotify)
                 if err2 != nil {
                     fmt.Println("ResumableBockPut", blockIdx, "failed", code, err2)
                     failed = true
@@ -267,5 +241,28 @@ func (r Service) Put(
     } else {
         code = 200
     }
+    return
+}
+
+func (r Service) Mkfile(
+    ret interface{}, cmd, entry string,
+    fsize int64, params, callbackParams string, checksums []string) (code int, err error) {
+    if callbackParams != "" {
+        params += "/params/" + rpc.EncodeURI(callbackParams)
+    }
+
+    n := len(checksums)
+    body := make([]byte, 20*n)
+    for i, checksum := range checksums {
+        ret, err2 := base64.URLEncoding.DecodeString(checksum)
+        if err2 != nil {
+            code, err = 400, errors.New("mkfile error")
+            return
+        }
+        copy(body[i*20:], ret)
+    }
+    code, err = r.Conn.CallWithBy(
+        "up", ret, r.Config.HostIp["up_ip"]+cmd+rpc.EncodeURI(entry)+"/fsize/"+strconv.FormatInt(fsize, 10)+params,
+        "application/octet-stream", bytes.NewReader(body), (int64)(len(body)))
     return
 }

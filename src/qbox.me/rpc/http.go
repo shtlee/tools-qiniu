@@ -1,15 +1,14 @@
 package rpc
 
 import (
-	"io"
-	"net/http"
+    "io"
 )
 
 type Http interface {
-	DoPost(url string, bodyType string, body io.Reader, bodyLength int64) (resp *http.Response, err error)
+	CallWithForm(ret interface{}, url string, param map[string][]string) (code int, err error)
 
-	DoGet(url string) (resp *http.Response, err error)
+    CallWith(ret interface{}, url string, bodyType string, body io.Reader, bodyLength int64) (code int, err error)
 
-	DoPostForm(url_ string, data map[string][]string) (resp *http.Response, err error)
+    Call(ret interface{}, url string) (code int, err error) 
 }
 

@@ -9,17 +9,19 @@ import (
 type Config struct {
 	Host           map[string]string `json:"HOST"`
 	HostIp         map[string]string `json:"HOST_IP"`
-	AccessKey      string            `json:"QBOX_ACCESS_KEY"`
-	SecretKey      string            `json:"QBOX_SECRET_KEY"`
-	BlockBits      uint              `json:"BLOCK_BITS"`
-	RPutChunkSize  int64             `json:"RPUT_CHUNK_SIZE"`
-	RPutRetryTimes int               `json:"RPUT_RETRY_TIMES"`
 
-	DataPath string `json:"DataPath"`
+	AccessKey      string    `json:"QBOX_ACCESS_KEY"`
+	SecretKey      string    `json:"QBOX_SECRET_KEY"`
+	
+	BlockBits      uint      `json:"BLOCK_BITS"`
+	RPutChunkSize  int64     `json:"RPUT_CHUNK_SIZE"`
+	RPutRetryTimes int       `json:"RPUT_RETRY_TIMES"`
 
-	Client       string `json:"CLIENT"`
-	ClientId     string `json:"CLIENT_ID"`
-	ClientSecret string `json:"CLIENT_SECRET"`
+	DataPath     string      `json:"DataPath"`
+
+	Client       string      `json:"CLIENT"`
+	ClientId     string      `json:"CLIENT_ID"`
+	ClientSecret string      `json:"CLIENT_SECRET"`
 
 	RedirectURI           string `json:"REDIRECT_URI"`
 	AuthorizationEndPoint string `json:"AUTHORIZATION_ENDPOINT"`
