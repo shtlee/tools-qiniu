@@ -14,12 +14,10 @@ const (
 	EXPIRES_TIME = 3600
 )
 
-
 type Transport struct {
 	Uptoken string
 	transport http.RoundTripper
 }
-
 
 type AuthPolicy struct {
 	Scope            string `json:"scope"`
@@ -30,7 +28,6 @@ type AuthPolicy struct {
 }
 
 func MakeAuthToken(key, secret []byte, auth *AuthPolicy) []byte {
-
 	if auth.Deadline == 0 {
 		auth.Deadline = uint32(time.Now().Unix()) + uint32(EXPIRES_TIME)
 	}
@@ -42,7 +39,6 @@ func MakeAuthToken(key, secret []byte, auth *AuthPolicy) []byte {
 	ret := make([]byte, nkey+30+blen)
 
 	base64.URLEncoding.Encode(ret[nkey+30:], b)
-
 	h := hmac.New(sha1.New, secret)
 	h.Write(ret[nkey+30:])
 	digest := h.Sum(nil)
@@ -55,14 +51,10 @@ func MakeAuthToken(key, secret []byte, auth *AuthPolicy) []byte {
 	return ret
 }
 
-
-
 func MakeAuthTokenString(key, secret string, auth *AuthPolicy) string {
-
 	token := MakeAuthToken([]byte(key), []byte(secret), auth)
 	return string(token)
 }
-
 
 func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	req.Header.Set("Authorization", t.Uptoken)

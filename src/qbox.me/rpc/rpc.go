@@ -81,6 +81,28 @@ func Download(url string) (r io.ReadWriter, err error) {
 	return r, err
 }
 
+const (
+	NetWorkError = 102
+)
+
+func (r Client) CallWithBinaryEx(ret interface{}, url_ string, bodyType string, body io.Reader, bodyLength int) (code int, err error) {
+	resp, err := r.PostEx(url_, bodyType, body, bodyLength)
+	if err != nil {
+		return NetWorkError, err
+	}
+	return callRet(ret, resp)
+}
+
+func (r Client) PostEx(url_ string, bodyType string, body io.Reader, bodyLength int) (resp *http.Response, err error) {
+	req, err := http.NewRequest("POST", url_, body)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", bodyType)
+	req.ContentLength = int64(bodyLength)
+	return r.Do(req)
+}
+
 // --------------------------- with header host -----------------------------
 
 // --------------------------- by RS -----------------------------------------

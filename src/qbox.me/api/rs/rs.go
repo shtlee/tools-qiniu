@@ -75,7 +75,7 @@ func (s *RSService) Get(entryURI, base, attName string, expires int) (data GetRe
 	}
 	//code, err = s.Conn.Call(&data, url)
 	code, err = s.Conn.CallBy("rs", &data, url)
-	if code/100 == 2 {
+	if code == 200 {
 		data.Expiry += time.Now().Unix()
 	}
 	return
@@ -84,8 +84,8 @@ func (s *RSService) Get(entryURI, base, attName string, expires int) (data GetRe
 // Fetch  downloads a file specified the url and then stores it as the fname
 // on the disk.
 func (s *RSService) Fetch(url, saveAs string) error {
-	imgFi, err := os.OpenFile(saveAs, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
-	defer imgFi.Close()
+	fi, err := os.OpenFile(saveAs, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+	defer fi.Close()
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -95,7 +95,7 @@ func (s *RSService) Fetch(url, saveAs string) error {
 		fmt.Println(err)
 		return err
 	}
-	io.Copy(imgFi, reader)
+	io.Copy(fi, reader)
 	return err
 }
 
