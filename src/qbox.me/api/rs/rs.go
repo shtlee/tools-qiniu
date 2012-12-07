@@ -10,6 +10,7 @@ import (
 	"qbox.me/rpc"
 	"strconv"
 	"time"
+	"strings"
 )
 
 type RSService struct {
@@ -78,6 +79,11 @@ func (s *RSService) Get(entryURI, base, attName string, expires int) (data GetRe
 	return
 }
 
+// 
+func replaceHostWithIP(url, host, ip string) string {
+	return strings.Replace(url, host, ip, 1)
+}
+
 // Fetch  downloads a file specified the url and then stores it as the fname
 // on the disk.
 func (s *RSService) Fetch(url, saveAs string) error {
@@ -87,7 +93,7 @@ func (s *RSService) Fetch(url, saveAs string) error {
 		fmt.Println(err)
 		return err
 	}
-	reader, err := rpc.Download(url)
+	reader, err := rpc.DownloadBy("io", url)
 	if err != nil {
 		fmt.Println(err)
 		return err
