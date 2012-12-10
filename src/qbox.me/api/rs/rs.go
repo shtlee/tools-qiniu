@@ -18,7 +18,7 @@ type RSService struct {
 	Conn rpc.Client
 }
 
-func New(c *Config, t http.RoundTripper) (s *RSService, err error) {
+func NewRS(c *Config, t http.RoundTripper) (s *RSService, err error) {
 	if c == nil {
 		err = errors.New("Must have a config file")
 		return
@@ -60,6 +60,7 @@ func (s *RSService) Put(
 	return
 }
 
+// 动态获取文件授权后的临时下载链接
 func (s *RSService) Get(entryURI, base, attName string, expires int) (data GetRet, code int, err error) {
 	url := s.HostIp["rs_ip"] + "/get/" + EncodeURI(entryURI)
 	if base != "" {
@@ -93,7 +94,10 @@ func (s *RSService) Fetch(url, saveAs string) error {
 		fmt.Println(err)
 		return err
 	}
-	reader, err := rpc.DownloadBy("io", url)
+
+	ip := string([]byte(s.Config.HostIp["io_ip"][7:]))
+	url = replaceHostWithIP(url, s.Config.Host["io"], ip)
+	reader, err := s.Conn.DownloadBy("io", url)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -108,7 +112,7 @@ func (s *RSService) Stat(entryURI string) (entry Entry, code int, err error) {
 }
 
 func (s *RSService) Delete(entryURI string) (code int, err error) {
-	return s.Conn.Call(nil, s.Host["rs"]+"/delete/"+EncodeURI(entryURI))
+	return s.Conn.Call(nil, "http://"+s.Host["rs"]+"/delete/"+EncodeURI(entryURI))
 }
 
 func (s *RSService) Mkbucket(bucketname string) (code int, err error) {
@@ -198,5 +202,42 @@ func (b *Batcher) Do() (ret []BatchRet, code int, err error) {
 	s := b.s1
 	code, err = s.Conn.CallWithForm(&b.ret, s.Host["rs"]+"/batch", map[string][]string{"op": b.op})
 	ret = b.ret
+	return
+}
+
+func (s RSService) Upload(entryURI, localFile, mimeType, customMeta, callbackParam string, upToken string) (ret PutRet, code int, err error) {
+
+	return s.UploadEx(upToken, localFile, entryURI, mimeType, customMeta, callbackParam, -1, -1)
+}
+
+func (s RSService) UploadEx(upToken string, localFile, entryURI string, mimeType, customMeta, callbackParam string,
+	crc int64, rotate int) (ret PutRet, code int, err error) {
+
+	action := "/rs-put/" + rpc.EncodeURI(entryURI)
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+	action += "/mimeType/" + rpc.EncodeURI(mimeType)
+	if customMeta != "" {
+		action += "/meta/" + rpc.EncodeURI(customMeta)
+	}
+	if crc >= 0 {
+		action += "/crc32/" + strconv.FormatInt(crc, 10)
+	}
+	if rotate >= 0 {
+		action += "/rotate/" + strconv.FormatInt(int64(rotate), 10)
+	}
+	url := "http://up.qbox.me" + "/upload"
+
+	multiParams := map[string][]string{
+		"action": {action},
+		"file":   {"@" + localFile},
+		"auth":   {upToken},
+	}
+	if callbackParam != "" {
+		multiParams["params"] = []string{callbackParam}
+	}
+
+	code, err = s.Conn.CallWithMultipart(&ret, url, multiParams)
 	return
 }

@@ -75,11 +75,11 @@ func (t *Transport) RoundTrip(req *http.Request) (resp *http.Response, err error
 	return t.transport.RoundTrip(req)
 }
 
-func NewTransport(key, secret string, transport http.RoundTripper) *Transport {
+func NewTransport(accessKey, secretKey string, transport http.RoundTripper) *Transport {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
-	return &Transport{key, []byte(secret), transport}
+	return &Transport{accessKey, []byte(secretKey), transport}
 }
 
 // ---------------------------------------------------------------------------------------

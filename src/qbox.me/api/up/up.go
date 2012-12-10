@@ -46,7 +46,7 @@ func NewService(c *Config, t http.RoundTripper, taskQsize, threadSize int) (s Se
         go worker(tasks)
     }
     if c == nil {
-        err = errors.New("Must have a config file!")
+        err = errors.New("No config file found!")
         return 
     }
     if t == nil {

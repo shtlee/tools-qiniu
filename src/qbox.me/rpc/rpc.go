@@ -129,12 +129,13 @@ func (r Client) doPostByIO(url string, bodyType string, body io.Reader, bodyLeng
 	return r.Do(req)
 }
 
-func doGetByIO(url string) (resp *http.Response, err error) {
+func (r Client) doGetByIO(url string) (resp *http.Response, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return
 	}
 	resp, err = http.DefaultClient.Do(req)
+	req.Host = r.Conf.Host["io"]
 	return resp, err
 }
 
@@ -264,13 +265,13 @@ func (r Client) CallBy(clientType string, ret interface{}, url string) (code int
 	return callRet(ret, resp)
 }
 
-func DownloadBy(clientType string, url string) (r io.ReadWriter, err error) {
+func (c Client) DownloadBy(clientType string, url string) (r io.ReadWriter, err error) {
 	var (
 		resp *http.Response
 	)
 	switch clientType {
 	case "io":
-		resp, err = doGetByIO(url)
+		resp, err = c.doGetByIO(url)
 	case "up":
 		resp, err = doGetByUP(url)
 	case "rs":
@@ -284,3 +285,24 @@ func DownloadBy(clientType string, url string) (r io.ReadWriter, err error) {
 	io.Copy(r, resp.Body)
 	return r, err
 }
+
+
+
+func (r Client) PostMultipart(url_ string, data map[string][]string) (resp *http.Response, err error) {
+	body, ct, err := Open(data)
+	if err != nil {
+		return
+	}
+	defer body.Close()
+
+	return r.doPost(url_, ct, body, -1)
+}
+
+func (r Client) CallWithMultipart(ret interface{}, url_ string, param map[string][]string) (code int, err error) {
+	resp, err := r.PostMultipart(url_, param)
+	if err != nil {
+		return 201, err
+	}
+	return callRet(ret, resp)
+}
+
