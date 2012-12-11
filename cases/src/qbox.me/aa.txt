@@ -1,0 +1,21 @@
+mons :  map[exp1:0x18861470 mk_blk_up:0x1883c730]
+----------------- result ------------------
+begin check ...
+[1/2]process exp1 <<<
+test msg
+[no err]exp1 done <<<
+[2/2]process mk_blk_up <<<
+UP ==>> nb4_resumableput    16:56:56.475    16:56:56.653    177.5ms  ok
+UP ==>> bj4_resumableput    16:56:56.653    16:56:57.197    543.8ms  ok
+UP ==>> nb5_resumableput    16:56:57.197    16:56:57.366    169.6ms  ok
+UP ==>> sh2_resumableput    16:56:57.367    16:56:57.648    281.4ms  ok
+UP ==>> zmt4_resumableput   16:56:57.648    16:56:57.861    212.8ms  ok
+UP ==>> wh2_resumableput    16:56:57.861    16:56:58.080    218.8ms  ok
+UP ==>> xa1_resumableput    16:56:58.080    16:56:58.331    250.5ms  ok
+UP ==>> bj3_resumableput    16:56:58.331    16:56:58.502    171.4ms  ok
+UP ==>> zmt3_resumableput   16:56:58.502    16:56:58.715    212.5ms  ok
+
+[no err]mk_blk_up done <<<
+all cases finish[2/2] <<<
+
+-------------------------------------------
