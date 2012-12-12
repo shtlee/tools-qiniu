@@ -56,20 +56,22 @@ func (p *Visitor) VisitFile(path string, fi os.FileInfo) {
 		log.Error("name err(nil or duplication) :", path, info.Name, info.Type)
 		os.Exit(1)
 	}
-	fun, ok := mons.Mons[info.Type]
-	if !ok {
-		log.Error("no such type :", info.Type, info.Name)
-		os.Exit(1)
-	}
+	if info.Type != "null" {
+		fun, ok := mons.Mons[info.Type]
+		if !ok {
+			log.Error("no such type :", info.Type, info.Name)
+			os.Exit(1)
+		}
 
-	mon := fun()
-	err = mon.Init(conf)
-	if err != nil {
-		log.Error("init err :", info.Name, info.Type, err)
-		os.Exit(1)
+		mon := fun()
+		err = mon.Init(conf)
+		if err != nil {
+			log.Error("init err :", info.Name, info.Type, err)
+			os.Exit(1)
+		}
+		p.mons[info.Name] = mon
+		log.Info("loaded", info.Name, info.Type)
 	}
-	p.mons[info.Name] = mon
-	log.Info("loaded", info.Name, info.Type)
 }
 
 func main() {
@@ -89,13 +91,15 @@ func main() {
 	mons := make(map[string]mons.Interface)
 	filepath.Walk(conf.Include, &Visitor{mons}, nil)
 
-	fmt.Println("mons : ", mons)
 
 	check := func() bool {
 		msg := fmt.Sprintf("begin check ...\n")
 		errCount := 0
 		count := 0
 		for k, v := range mons {
+			if k == "ipconfig" {
+				continue
+			}
 			count++
 			log.Info("begin check", k, "...")
 			msg += fmt.Sprintf("[%v/%v]process %v <<<\n", count, len(mons), k)
