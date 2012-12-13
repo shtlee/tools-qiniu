@@ -1,0 +1,19 @@
+{
+    "name"      :       "m1.resumableput",
+    "type"      :       "null",
+    
+    "hosts"     : {
+        "up"    :      "m1.qbox.me",
+        "rs"    :      "m1.qbox.me",
+        "io"    :      "m1.qbox.me"
+    },
+
+    "ips"       : {
+        "up_ip" :      "http://125.65.113.219:13019",
+        "rs_ip" :      "http://125.65.113.219:13003",
+        "io_ip" :      "http://125.65.113.219:13004"
+    },
+
+    "access_key"    :      "FU6raNOrvI6MbuBvmm-byeKjX3hIBkbOHKFOVlMx",
+    "secret_key"    :      "4GdsUanm7ENL0BgStjJw6PjGTCeWYetVMOS83duy"
+}

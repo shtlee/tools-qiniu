@@ -1,0 +1,9 @@
+Fop==>>bj3_jpg.imgview_doTestImgOp             17:33:25.720    17:33:25.802     81.6ms  ok
+UP==>>bj3_resumableput_doTestPut               17:33:25.840    17:33:25.981    140.9ms  ok
+UP==>>bj3_resumableput_doTestRsGet             17:33:25.981    17:33:26.130    149.4ms  ok
+UP==>>bj3_resumableput_doTestDownload          17:33:26.130    17:33:26.146     15.9ms  ok
+UP==>>bj3_resumableput2_doTestPut              17:33:26.147    17:33:26.298    150.9ms  ok
+UP==>>bj3_resumableput2_doTestRsGet            17:33:26.298    17:33:26.407    109.7ms  ok
+UP==>>bj3_resumableput2_doTestDownload         17:33:26.407    17:33:26.423     15.7ms  ok
+Fop==>>bj3_jpg.imgmogr_doTestImgOp             17:33:26.709    17:33:26.737     28.2ms  ok
+Fop==>>bj3_jpg.imginfo_doTestGetImgInfo        17:33:27.121    17:33:27.136     15.6ms  ok

@@ -9,7 +9,8 @@ import (
 //	"math/rand"
 	"encoding/json"
 	"qbox.me/log"
-	"qbox.me/mons"
+	"qbox.me/usecase"
+	//"qbox.me/usecase/util"
 	"qbox.me/cc"
 //	"time"
 	"qbox.me/shell/shutil/filepath"
@@ -17,7 +18,8 @@ import (
 
 type Config struct {
 	MaxProcs int    `json:"max_procs"`
-	Include  string `json:"include"`
+	Include  string `json:"cases"`
+	Env      string `json:"env"`
 }
 
 func getConf(file string) (moConf *Config, err error) {
@@ -30,46 +32,55 @@ func getConf(file string) (moConf *Config, err error) {
 }
 
 type Visitor struct {
-	mons map[string]mons.Interface
+	cases map[string]usecase.Interface
+	env  string 
 }
 
-type MonInfo struct {
+type CaseInfo struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 }
 
 func (p *Visitor) VisitDir(path string, fi os.FileInfo) bool { return true }
 func (p *Visitor) VisitFile(path string, fi os.FileInfo) {
-	log.Info("loading", path, "...")
+	log.Info("loading ", path, "...")
 	conf, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Error("load err :", path, err)
 		os.Exit(1)
 	}
-	var info MonInfo
+
+	log.Info("reading ", p.env, "...")
+	env, err := ioutil.ReadFile(p.env)
+	if err != nil {
+		log.Error("load err : ", p.env, err)
+		os.Exit(1)
+	}
+
+	var info CaseInfo
 	err = json.Unmarshal(conf, &info)
 	if err != nil {
 		log.Error("load err :", path, err)
 		os.Exit(1)
 	}
-	if _, ok := p.mons[info.Name]; ok || info.Name == "" {
+	if _, ok := p.cases[info.Name]; ok || info.Name == "" {
 		log.Error("name err(nil or duplication) :", path, info.Name, info.Type)
 		os.Exit(1)
 	}
 	if info.Type != "null" {
-		fun, ok := mons.Mons[info.Type]
+		fun, ok := usecase.Cases[info.Type]
 		if !ok {
 			log.Error("no such type :", info.Type, info.Name)
 			os.Exit(1)
 		}
 
-		mon := fun()
-		err = mon.Init(conf)
+		caseEntry := fun()
+		err = caseEntry.Init(conf, env)
 		if err != nil {
 			log.Error("init err :", info.Name, info.Type, err)
 			os.Exit(1)
 		}
-		p.mons[info.Name] = mon
+		p.cases[info.Name] = caseEntry
 		log.Info("loaded", info.Name, info.Type)
 	}
 }
@@ -88,22 +99,20 @@ func main() {
 	runtime.GOMAXPROCS(conf.MaxProcs)
 
 	//rand.Seed(time.Nanoseconds())
-	mons := make(map[string]mons.Interface)
-	filepath.Walk(conf.Include, &Visitor{mons}, nil)
+	// load cases
+	cases := make(map[string]usecase.Interface)
+	filepath.Walk(conf.Include, &Visitor{cases, conf.Env}, nil)
 
 
 	check := func() bool {
 		msg := fmt.Sprintf("begin check ...\n")
 		errCount := 0
 		count := 0
-		for k, v := range mons {
-			if k == "ipconfig" {
-				continue
-			}
+		for k, v := range cases {
 			count++
 			log.Info("begin check", k, "...")
-			msg += fmt.Sprintf("[%v/%v]process %v <<<\n", count, len(mons), k)
-			info, err := v.Mon()
+			msg += fmt.Sprintf("[%v/%v]process %v <<<\n", count, len(cases), k)
+			info, err := v.Test()
 			log.Info("check done :\n", info, k, err)
 			msg += info
 			msg += "\n"
@@ -114,7 +123,7 @@ func main() {
 				msg += fmt.Sprintf("[no err]%v done <<<\n", k)
 			}
 		}
-		msg += fmt.Sprintf("all cases finish[%v/%v] <<<\n", len(mons)-errCount, len(mons))
+		msg += fmt.Sprintf("all cases finish[%v/%v] <<<\n", len(cases)-errCount, len(cases))
 		fmt.Println("----------------- result ------------------")
 		fmt.Println(msg)
 		fmt.Println("-------------------------------------------")

@@ -90,14 +90,14 @@ const (
 // --------------------------- by RS -----------------------------------------
 
 func (r Client) doPostByRS(url string, bodyType string, body io.Reader, bodyLength int64) (resp *http.Response, err error) {
-	fmt.Println(" |- doPostByRS --> ", url)
+fmt.Println(" |- doPostByRS --> ", url)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return
 	}
 	req.Header.Set("Content-Type", bodyType)
 	req.Host = r.Conf.Host["rs"]
-	fmt.Println("req.Host --> ", req.Host)
+fmt.Println(" |- req.Host --> ", req.Host)
 	req.ContentLength = bodyLength
 	return r.Do(req)
 }
@@ -295,7 +295,7 @@ func (r Client) PostMultipart(url_ string, data map[string][]string) (resp *http
 	}
 	defer body.Close()
 
-	return r.doPost(url_, ct, body, -1)
+	return r.doPost2(url_, ct, body, -1)
 }
 
 func (r Client) CallWithMultipart(ret interface{}, url_ string, param map[string][]string) (code int, err error) {
@@ -305,4 +305,13 @@ func (r Client) CallWithMultipart(ret interface{}, url_ string, param map[string
 	}
 	return callRet(ret, resp)
 }
-
+func (r Client) doPost2(url string, bodyType string, body io.Reader, bodyLength int64) (resp *http.Response, err error) {
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", bodyType)
+	req.Host = r.Conf.Host["up"]
+	req.ContentLength = bodyLength
+	return r.Do(req)
+}

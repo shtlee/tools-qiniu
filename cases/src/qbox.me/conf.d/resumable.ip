@@ -1,0 +1,7 @@
+{
+    "name"      :       "resumableput.ip",
+    "type"      :       "null",
+    "ips" : {
+        "bj3" : "http://118.26.231.133"
+    }
+}

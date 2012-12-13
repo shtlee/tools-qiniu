@@ -2,7 +2,6 @@ package rs
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"qbox.me/httputil"
 	"strconv"
 	"time"
+	"fmt"
 	"strings"
 )
 
@@ -91,7 +91,6 @@ func (s *RSService) Fetch(url, saveAs string) error {
 	fi, err := os.OpenFile(saveAs, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
 	defer fi.Close()
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -99,7 +98,6 @@ func (s *RSService) Fetch(url, saveAs string) error {
 	url = replaceHostWithIP(url, s.Config.Host["io"], ip)
 	reader, err := s.Conn.DownloadBy("io", url)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 	io.Copy(fi, reader)
@@ -132,7 +130,6 @@ func (s *RSService) Copy(entryURISrc, entryURIDest string) (code int, err error)
 }
 
 func (s *RSService) Publish(domain, table string) (code int, err error) {
-	fmt.Println(" |--- rs Publish --> ", domain, table)
 	//return s.Conn.Call(nil, "http://"+s.Host["rs"]+"/publish/"+EncodeURI(domain)+"/from/"+table)
 	return s.Conn.CallBy("rs", nil, s.HostIp["rs_ip"]+"/publish/"+EncodeURI(domain)+"/from/"+table)
 }
@@ -227,8 +224,12 @@ func (s RSService) UploadEx(upToken string, localFile, entryURI string, mimeType
 	if rotate >= 0 {
 		action += "/rotate/" + strconv.FormatInt(int64(rotate), 10)
 	}
-	url := "http://up.qbox.me" + "/upload"
+	//url := "http://up.qbox.me" + "/upload"
+	//url := "http://m1.qbox.me" + "/upload"
+	//url := "http://m1.qbox.me" + "/upload"
+	url := s.Config.HostIp["up_ip"] + "/upload"
 
+fmt.Println()
 	multiParams := map[string][]string{
 		"action": {action},
 		"file":   {"@" + localFile},

@@ -1,0 +1,38 @@
+io_ip  :  http://125.65.113.219:13004
+config :  {map[up:m1.qbox.me io:m1.qbox.me rs:m1.qbox.me] map[io_ip:http://125.65.113.219:13004 rs_ip:http://125.65.113.219:13003 up_ip:http://125.65.113.219:13019] FU6raNOrvI6MbuBvmm-byeKjX3hIBkbOHKFOVlMx 4GdsUanm7ENL0BgStjJw6PjGTCeWYetVMOS83duy 22 256 2       }
+ |- doPostByRS -->  http://125.65.113.219:13003/get/dGJsTmFtZTppb19pcA==/expires/3600
+req.Host -->  m1.qbox.me
+callby :  <nil>
+hash -->  fef32d34f185b5876dc8bcee8d879ecf9ba13c8d
+rs_ip  :  http://125.65.113.219:13003
+config :  {map[rs:m1.qbox.me up:m1.qbox.me io:m1.qbox.me] map[io_ip:http://125.65.113.219:13004 rs_ip:http://125.65.113.219:13003 up_ip:http://125.65.113.219:13019] FU6raNOrvI6MbuBvmm-byeKjX3hIBkbOHKFOVlMx 4GdsUanm7ENL0BgStjJw6PjGTCeWYetVMOS83duy 22 256 2       }
+ |- doPostByRS -->  http://125.65.113.219:13003/get/dGJsTmFtZTpyc19pcA==/expires/3600
+req.Host -->  m1.qbox.me
+callby :  <nil>
+hash -->  fef32d34f185b5876dc8bcee8d879ecf9ba13c8d
+up_ip  :  http://125.65.113.219:13019
+config :  {map[rs:m1.qbox.me up:m1.qbox.me io:m1.qbox.me] map[io_ip:http://125.65.113.219:13004 rs_ip:http://125.65.113.219:13003 up_ip:http://125.65.113.219:13019] FU6raNOrvI6MbuBvmm-byeKjX3hIBkbOHKFOVlMx 4GdsUanm7ENL0BgStjJw6PjGTCeWYetVMOS83duy 22 256 2       }
+ |- doPostByRS -->  http://125.65.113.219:13003/get/dGJsTmFtZTp1cF9pcA==/expires/3600
+req.Host -->  m1.qbox.me
+callby :  <nil>
+hash -->  fef32d34f185b5876dc8bcee8d879ecf9ba13c8d
+----------------- result ------------------
+begin check ...
+[1/2]process m1.resumableput <<<
+UP ==>> m1.resumableput_resumableput         14:47:39.992    14:47:40.119    126.8ms  ok
+UP ==>> m1.resumableput_doTestRsGet          14:47:40.119    14:47:40.200     81.1ms  ok
+UP ==>> m1.resumableput_doTestDownload       14:47:40.200    14:47:40.288     87.9ms  ok
+UP ==>> m1.resumableput_resumableput         14:47:40.288    14:47:40.397    108.3ms  ok
+UP ==>> m1.resumableput_doTestRsGet          14:47:40.397    14:47:40.438     41.4ms  ok
+UP ==>> m1.resumableput_doTestDownload       14:47:40.438    14:47:40.479     40.6ms  ok
+UP ==>> m1.resumableput_resumableput         14:47:40.479    14:47:40.565     85.5ms  ok
+UP ==>> m1.resumableput_doTestRsGet          14:47:40.565    14:47:40.606     40.8ms  ok
+UP ==>> m1.resumableput_doTestDownload       14:47:40.606    14:47:40.646     40.8ms  ok
+
+[no err]m1.resumableput done <<<
+[2/2]process exp1 <<<
+test msg
+[no err]exp1 done <<<
+all cases finish[2/2] <<<
+
+-------------------------------------------

@@ -108,12 +108,10 @@ func (r Service) resumableBlockput(
 
         ret, code, err = r.mkBlock(blkSize, body, bodyLength)
         if err != nil {
-            fmt.Println(" |- ResumaleBlockPut : mkblock failed : ", err)
             return
         }
 
         if ret.Crc32 != h.Sum32() {
-            fmt.Println("ResumableBlockput: invalid checksum")
             return
         }
 
