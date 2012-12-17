@@ -20,34 +20,55 @@ type Client struct {
 	*http.Client
 }
 
-func (r Client) doPost(url string, bodyType string, body io.Reader, bodyLength int64) (resp *http.Response, err error) {
+func (r Client) doPost(url, host string, bodyType string, body io.Reader, bodyLength int64) (resp *http.Response, err error) {
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return
 	}
 	req.Header.Set("Content-Type", bodyType)
+	if host != "" {
+		req.Host = host
+	}
 	req.ContentLength = bodyLength
 	return r.Do(req)
 }
 
-func doGet(url string) (resp *http.Response, err error) {
+func doGet(url, host string) (resp *http.Response, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
+	}
+	if host != "" {
+		req.Host = host
 	}
 	resp, err = http.DefaultClient.Do(req)
 	return resp, err
 }
 
-func (r Client) doPostForm(url_ string, data map[string][]string) (resp *http.Response, err error) {
+func (r Client) doPostForm(url_, host string, data map[string][]string) (resp *http.Response, err error) {
 	msg := url.Values(data).Encode()
-	return r.doPost(url_, "application/x-www-form-urlencoded", strings.NewReader(msg), (int64)(len(msg)))
+	return r.doPost(url_, host, "application/x-www-form-urlencoded", strings.NewReader(msg), (int64)(len(msg)))
 }
 
 // ------------------------------ helpers ------------------------------
 
+func (r Client) CallWithFormEx(ret interface{}, url, host string, param map[string][]string) (code int, err error) {
+
+	resp, err := r.doPostForm(url, host, param)
+	if err != nil {
+		return errcode.InternalError, err
+	}
+	return callRet(ret, resp)
+}
+
 func (r Client) CallWithForm(ret interface{}, url string, param map[string][]string) (code int, err error) {
-	resp, err := r.doPostForm(url, param)
+	return r.CallWithFormEx(ret, url, "", param)
+}
+
+
+func (r Client) CallWithEx(ret interface{}, url, host string, bodyType string, body io.Reader, bodyLength int64) (code int, err error) {
+
+	resp, err := r.doPost(url, host, bodyType, body, int64(bodyLength))
 	if err != nil {
 		return errcode.InternalError, err
 	}
@@ -55,23 +76,27 @@ func (r Client) CallWithForm(ret interface{}, url string, param map[string][]str
 }
 
 func (r Client) CallWith(ret interface{}, url string, bodyType string, body io.Reader, bodyLength int64) (code int, err error) {
-	resp, err := r.doPost(url, bodyType, body, (int64)(bodyLength))
+	return r.CallWithEx(ret, url, "", bodyType, body, bodyLength)
+}
+
+
+func (r Client) CallEx(ret interface{}, url, host string) (code int, err error) {
+
+	resp, err := r.doPost(url, host, "application/x-www-form-urlencoded", nil, 0)
 	if err != nil {
 		return errcode.InternalError, err
 	}
-	return callRet(ret, resp)
+	return callRet(ret, resp)	
 }
 
 func (r Client) Call(ret interface{}, url string) (code int, err error) {
-	resp, err := r.doPost(url, "application/x-www-form-urlencoded", nil, 0)
-	if err != nil {
-		return errcode.InternalError, err
-	}
-	return callRet(ret, resp)
+
+	return r.CallEx(ret, url, "")
 }
 
-func Download(url string) (r io.ReadWriter, err error) {
-	resp, err := doGet(url)
+func DownloadEx(url, host string) (r io.ReadWriter, err error) {
+
+	resp, err := doGet(url, host)
 	defer resp.Body.Close()
 	if err != nil {
 		return
@@ -79,6 +104,12 @@ func Download(url string) (r io.ReadWriter, err error) {
 	r = new(bytes.Buffer)
 	io.Copy(r, resp.Body)
 	return r, err
+
+}
+
+func Download(url string) (r io.ReadWriter, err error) {
+
+	return DownloadEx(url, "")
 }
 
 const (
